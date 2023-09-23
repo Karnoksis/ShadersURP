@@ -2,16 +2,22 @@
 
 // Textures
 TEXTURE2D(_MainTex); SAMPLER(sampler_MainTex); // RGB = albedo, A = alpha
-		half4 _MainTex_ST;
-CBUFFER_START(UnityPerMaterial)
+	
 
-         UNITY_INSTANCING_BUFFER_START(Props)
-                UNITY_DEFINE_INSTANCED_PROP(half3, _Color)
+
 		
+				half4 _MainTex_ST;
+			         UNITY_INSTANCING_BUFFER_START(Props)
+                UNITY_DEFINE_INSTANCED_PROP(half3, _Color)
             UNITY_INSTANCING_BUFFER_END(Props)
+		
+
+		
 
 
-CBUFFER_END
+
+
+	StructuredBuffer<float3> _Positions;
 
 
 
@@ -25,8 +31,17 @@ struct Attributes {
 	half3 positionOS : POSITION; // Position in object space
 	half3 normalOS : NORMAL; // Normal in object space
 	half2 uv : TEXCOORD0; // Material texture UVs
-	UNITY_VERTEX_INPUT_INSTANCE_ID
+	 uint instanceID : SV_InstanceID;
 };
+
+		void ConfigureProcedural (Attributes input) 
+		{
+				UNITY_SETUP_INSTANCE_ID(input);
+				float3 position = _Positions[input.instanceID];
+
+				unity_ObjectToWorld = 0.0;
+				unity_ObjectToWorld._m03_m13_m23_m33 = float4(position, 1.0);
+		}
 
 // This struct is output by the vertex function and input to the fragment function.
 // Note that fields will be transformed by the intermediary rasterization stage
@@ -41,6 +56,7 @@ struct Interpolators {
 	half2 uv : TEXCOORD0; // Material texture UVs
 	half3 positionWS : TEXCOORD1; // Position in world space
 	half3 normalWS : TEXCOORD2; // Normal in world space
+	half3 vColor: COLOR;
 	UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
@@ -53,7 +69,7 @@ Interpolators Vertex(Attributes input) {
 	Interpolators output;
 
 	UNITY_SETUP_INSTANCE_ID(input);
-                UNITY_TRANSFER_INSTANCE_ID(input, output);
+    UNITY_TRANSFER_INSTANCE_ID(input, output);
 
 	// These helper functions, found in URP/ShaderLib/ShaderVariablesFunctions.hlsl
 	// transform object space values into world and clip space
@@ -65,6 +81,7 @@ Interpolators Vertex(Attributes input) {
 	output.uv = TRANSFORM_TEX(input.uv, _MainTex);
 	output.normalWS = normInputs.normalWS;
 	output.positionWS = posnInputs.positionWS;
+	output.vColor = half3(input.instanceID,input.instanceID,input.instanceID);
 
 	return output;
 
@@ -73,7 +90,8 @@ Interpolators Vertex(Attributes input) {
 
 // The fragment function. This runs once per fragment, which you can think of as a pixel on the screen
 // It must output the final color of this pixel
-half4 Fragment(Interpolators input) : SV_TARGET{
+half4 Fragment(Interpolators input) : SV_TARGET
+{
 	 UNITY_SETUP_INSTANCE_ID(input);
 
 	half2 uv = input.uv;
@@ -94,11 +112,14 @@ half4 Fragment(Interpolators input) : SV_TARGET{
 	half lightning = max(0, dot(InputInformation.normalWS, lightDirection));
 
 
+	half3 Albedo;
 
+	
 
+	Albedo =  UNITY_ACCESS_INSTANCED_PROP(Props, _Color) * input.vColor * textureSample.xyz * lightning * max(0.5,l.shadowAttenuation);
 
-    half3 Albedo = UNITY_ACCESS_INSTANCED_PROP(Props, _Color) * textureSample.xyz * lightning * max(0.5,l.shadowAttenuation);
 
     return half4(Albedo,1);
 
 }
+

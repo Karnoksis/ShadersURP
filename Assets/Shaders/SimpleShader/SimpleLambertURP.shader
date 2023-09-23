@@ -42,7 +42,7 @@ Shader "Custom/SimpleLambertURP" {
             #pragma fragment Fragment
 
             // Include our code file
-            #include "LitForwardLitPass.hlsl"
+            #include "LitForwardLitPassInstanced.hlsl"
             ENDHLSL
         }
 
