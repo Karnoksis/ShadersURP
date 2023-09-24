@@ -20,6 +20,7 @@ public class ProceduralDrawing : MonoBehaviour
 
     [SerializeField]
     public Mesh mesh;
+    RenderParams rp;
 
     // Start is called before the first frame update
     void Start()
@@ -40,23 +41,36 @@ public class ProceduralDrawing : MonoBehaviour
 
         computeShader.SetBuffer(0, "pos", positionBuffer);
 
-        computeShader.Dispatch(0, data.Length / 32, data.Length / 32, 1);
+        var bounds = new Bounds(Vector3.zero, Vector3.one * 2000f);
+        rp = new RenderParams(material);
+        rp.worldBounds = bounds;
+        rp.matProps = new MaterialPropertyBlock();
+        rp.matProps.SetBuffer("_Positions", positionBuffer);
+        // computeShader.Dispatch(0, data.Length / 32, data.Length / 32, 1);
     }
 
 
     // Update is called once per frame
+    private void OnDisable()
+    {
+        positionBuffer.Dispose();
+    }
     void Update()
     {
 
-        var bounds = new Bounds(Vector3.zero, Vector3.one * 2000000f);
-        RenderParams rp = new RenderParams(material);
-        rp.worldBounds = bounds;
-        rp.matProps = new MaterialPropertyBlock();
-        rp.matProps.SetBuffer("_Positions", positionBuffer);
-        Graphics.RenderMeshPrimitives(rp, mesh, 0, positionBuffer.count);
+
         computeShader.Dispatch(0, data.Length / 32, data.Length / 32, 1);
-        positionBuffer.GetData(data);
-        print(data[0].Position);
+        Graphics.RenderMeshPrimitives(rp, mesh, 0, positionBuffer.count);
+
+
+
+        
+       
+        //positionBuffer.GetData(data);
+       // print(data[0].Position);
+        
+        
+        
         /*
         positionBuffer.SetData(data);
 

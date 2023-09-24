@@ -47,7 +47,7 @@ struct Interpolators {
 	half2 uv : TEXCOORD0; // Material texture UVs
 	half3 positionWS : TEXCOORD1; // Position in world space
 	half3 normalWS : TEXCOORD2; // Normal in world space
-	uint instanceID : SV_InstanceID;
+	uint instanceID : TEXCOORD3;
 	//UNITY_VERTEX_INPUT_INSTANCE_ID 
 };
 
@@ -77,20 +77,20 @@ Interpolators Vertex(Attributes input) {
 	float3 position = _Positions[input.instanceID];
 
 	 
-
+	/*
 	float4x4 _ObjectToWorld =  (1, 0, 0, 0, 
 								0, 1, 0, 0,
 								0, 0, 1, 0,
 								0, 0, 0, 1);
 
-
+*/
 
 
 
 	//output.positionWS = mul(_ObjectToWorld, input.positionOS);
-	output.positionWS = input.positionOS.xyz + float4(input.instanceID.xxx,0);
+	output.positionWS = input.positionOS.xyz + position;
 	output.positionCS = mul(UNITY_MATRIX_VP, float4(output.positionWS,1.0f));
-
+	output.instanceID = input.instanceID;
 
 
 
@@ -132,12 +132,11 @@ half4 Fragment(Interpolators input) : SV_TARGET
 	half3 lightDirection = l.direction;
 	half lightning = max(0, dot(InputInformation.normalWS, lightDirection));
 
-
+	half3 InstanceColor;
 	half3 Albedo;
-
 	
 
-	Albedo = input.instanceID + _Color * textureSample.xyz * lightning * max(0.5,l.shadowAttenuation);
+	Albedo = _Color * textureSample.xyz * lightning * max(0.5,l.shadowAttenuation);
 
 
     return half4(Albedo,1);

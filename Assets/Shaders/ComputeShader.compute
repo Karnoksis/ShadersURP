@@ -23,7 +23,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
    // return;
 
     Pos tempPos = pos[id.x];
-    tempPos.position += float3(0, sin(_Time.y*3+tempPos.position.x+tempPos.position.z)/5000,0);
+    tempPos.position += float3(0, sin(_Time.y*3+tempPos.position.x+tempPos.position.z),0)/5000;
     pos[id.x] = tempPos;
 
 }

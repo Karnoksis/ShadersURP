@@ -41,6 +41,7 @@ Shader "Custom/SimpleLambertURP" {
             // Register our programmable stage functions
             #pragma vertex Vertex
             #pragma fragment Fragment
+            #pragma enable_d3d11_debug_symbols
 
             // Include our code file
             #include "LitForwardLitPassInstanced.hlsl"
