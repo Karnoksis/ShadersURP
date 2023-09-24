@@ -36,6 +36,7 @@ Shader "Custom/SimpleLambertURP" {
 #endif
             #pragma multi_compile_fragment _ _SHADOWS_SOFT
             #pragma multi_compile_instancing
+            //#pragma instancing_options assumeuniformscaling procedural:ConfigureProcedural
 
             // Register our programmable stage functions
             #pragma vertex Vertex

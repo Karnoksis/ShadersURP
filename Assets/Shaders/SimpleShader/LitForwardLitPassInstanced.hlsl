@@ -6,12 +6,10 @@ TEXTURE2D(_MainTex); SAMPLER(sampler_MainTex); // RGB = albedo, A = alpha
 
 
 		
-				half4 _MainTex_ST;
-			         UNITY_INSTANCING_BUFFER_START(Props)
-                UNITY_DEFINE_INSTANCED_PROP(half3, _Color)
-            UNITY_INSTANCING_BUFFER_END(Props)
+	half4 _MainTex_ST;
+	half3 _Color;
 		
-
+	float4x4 _transformMatrix;
 		
 
 
@@ -31,17 +29,10 @@ struct Attributes {
 	half3 positionOS : POSITION; // Position in object space
 	half3 normalOS : NORMAL; // Normal in object space
 	half2 uv : TEXCOORD0; // Material texture UVs
-	 uint instanceID : SV_InstanceID;
+	uint instanceID : SV_InstanceID;
+	// UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
-		void ConfigureProcedural (Attributes input) 
-		{
-				UNITY_SETUP_INSTANCE_ID(input);
-				float3 position = _Positions[input.instanceID];
-
-				unity_ObjectToWorld = 0.0;
-				unity_ObjectToWorld._m03_m13_m23_m33 = float4(position, 1.0);
-		}
 
 // This struct is output by the vertex function and input to the fragment function.
 // Note that fields will be transformed by the intermediary rasterization stage
@@ -56,8 +47,8 @@ struct Interpolators {
 	half2 uv : TEXCOORD0; // Material texture UVs
 	half3 positionWS : TEXCOORD1; // Position in world space
 	half3 normalWS : TEXCOORD2; // Normal in world space
-	half3 vColor: COLOR;
-	UNITY_VERTEX_INPUT_INSTANCE_ID
+	uint instanceID : SV_InstanceID;
+	//UNITY_VERTEX_INPUT_INSTANCE_ID 
 };
 
 // The vertex function. This runs for each vertex on the mesh.
@@ -65,7 +56,7 @@ struct Interpolators {
 // as well as any data the fragment function will need
 Interpolators Vertex(Attributes input) {
 	
-	
+
 	Interpolators output;
 
 	UNITY_SETUP_INSTANCE_ID(input);
@@ -73,15 +64,45 @@ Interpolators Vertex(Attributes input) {
 
 	// These helper functions, found in URP/ShaderLib/ShaderVariablesFunctions.hlsl
 	// transform object space values into world and clip space
+
 	VertexPositionInputs posnInputs = GetVertexPositionInputs(input.positionOS);
 	VertexNormalInputs normInputs = GetVertexNormalInputs(input.normalOS);
 
 	// Pass position and orientation data to the fragment function
-	output.positionCS = posnInputs.positionCS;
+	//output.positionCS = posnInputs.positionCS;
 	output.uv = TRANSFORM_TEX(input.uv, _MainTex);
 	output.normalWS = normInputs.normalWS;
-	output.positionWS = posnInputs.positionWS;
-	output.vColor = half3(input.instanceID,input.instanceID,input.instanceID);
+
+
+	float3 position = _Positions[input.instanceID];
+
+	 
+
+	float4x4 _ObjectToWorld =  (1, 0, 0, 0, 
+								0, 1, 0, 0,
+								0, 0, 1, 0,
+								0, 0, 0, 1);
+
+
+
+
+
+	//output.positionWS = mul(_ObjectToWorld, input.positionOS);
+	output.positionWS = input.positionOS.xyz + float4(input.instanceID.xxx,0);
+	output.positionCS = mul(UNITY_MATRIX_VP, float4(output.positionWS,1.0f));
+
+
+
+
+	//output.positionWS = mul(unity_ObjectToWorld, input.positionOS);
+
+
+
+
+	//float4 wpos = mul(unity_ObjectToWorld, input.positionOS + float4(instanceID, 0, 0, 0));
+    //output.positionWS = mul(UNITY_MATRIX_VP, wpos);
+
+
 
 	return output;
 
@@ -116,7 +137,7 @@ half4 Fragment(Interpolators input) : SV_TARGET
 
 	
 
-	Albedo =  UNITY_ACCESS_INSTANCED_PROP(Props, _Color) * input.vColor * textureSample.xyz * lightning * max(0.5,l.shadowAttenuation);
+	Albedo = input.instanceID + _Color * textureSample.xyz * lightning * max(0.5,l.shadowAttenuation);
 
 
     return half4(Albedo,1);
